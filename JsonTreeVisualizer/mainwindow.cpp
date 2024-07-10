@@ -10,8 +10,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     jsonTreeView = new JsonTreeView();
     ui->vl_mainLayout->addWidget(jsonTreeView);
+    //Just my example files, put the path to your desired file down below
     //jsonTreeView->loadJsonFromFile("C:/Users/home/Documents/JsonTreeVisualizer/sample.json");
-    jsonTreeView->loadJsonFromFile("C:/Users/home/Documents/JsonTreeVisualizer/oneMoreSample.json"); // to be fixed
+    jsonTreeView->loadJsonFromFile("C:/Users/home/Documents/JsonTreeVisualizer/oneMoreSample.json");
 }
 
 MainWindow::~MainWindow()
