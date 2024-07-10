@@ -4,10 +4,13 @@
 #include <QStandardItem>
 #include <QFile>
 #include <QMessageBox>
+#include <QHeaderView>
 
 JsonTreeView::JsonTreeView(QWidget *parent) : QTreeView(parent)
 {
     setModel(&m_model);
+    setHeaderHidden(true);
+    header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 }
 
 void JsonTreeView::setJson(const QJsonDocument &jsonDoc)
@@ -44,58 +47,40 @@ void JsonTreeView::populateModel(const QJsonObject &object, QStandardItem *paren
 {
     for (auto it = object.constBegin(); it != object.constEnd(); ++it) {
         QStandardItem *keyItem = new QStandardItem(it.key());
-        if (it.value().isObject() || it.value().isArray()) {
-            parentItem->appendRow(keyItem);
-            populateModel(it.value(), keyItem);
-        } else {
-            QList<QStandardItem *> items;
-            items << keyItem << new QStandardItem(it.value().toVariant().toString());
-            parentItem->appendRow(items);
+        QStandardItem *valueItem = new QStandardItem(it.value().toVariant().toString());
+        parentItem->appendRow({ keyItem, valueItem });
+
+        if (it.value().isObject()) {
+            populateModel(it.value().toObject(), keyItem);
+        } else if (it.value().isArray()) {
+            populateModel(it.value().toArray(), keyItem);
         }
     }
 }
 
-//ToDo: Fix incorrect value parsing when facing arrays
 void JsonTreeView::populateModel(const QJsonArray &array, QStandardItem *parentItem)
 {
     for (int i = 0; i < array.size(); ++i) {
-        QStandardItem *item = new QStandardItem(QString("[%1]").arg(i));
-        parentItem->appendRow(item);
-        if (array[i].isObject() || array[i].isArray()) {
-            populateModel(array[i].toObject(), item);
-        } else {
-            QList<QStandardItem *> items;
-            items << item;
-            items << new QStandardItem(array[i].toVariant().toString());
-            parentItem->appendRow(items);
+        QStandardItem *indexItem = new QStandardItem(QString("[%1]").arg(i));
+        QStandardItem *valueItem = new QStandardItem(array[i].toVariant().toString());
+        parentItem->appendRow({ indexItem, valueItem });
+
+        if (array[i].isObject()) {
+            populateModel(array[i].toObject(), indexItem);
+        } else if (array[i].isArray()) {
+            populateModel(array[i].toArray(), indexItem);
         }
     }
 }
 
 void JsonTreeView::populateModel(const QJsonValue &value, QStandardItem *parentItem)
 {
-    if (value.isArray()) {
-        const QJsonArray array = value.toArray();
-        for (int i = 0; i < array.size(); ++i) {
-            QStandardItem *item = new QStandardItem(QString("[%1]").arg(i));
-            parentItem->appendRow(item);
-            populateModel(array[i], item);
-        }
-    } else if (value.isObject()) {
-        const QJsonObject obj = value.toObject();
-        for (auto it = obj.constBegin(); it != obj.constEnd(); ++it) {
-            QStandardItem *keyItem = new QStandardItem(it.key());
-            if (it.value().isObject() || it.value().isArray()) {
-                parentItem->appendRow(keyItem);
-                populateModel(it.value(), keyItem);
-            } else {
-                QList<QStandardItem *> items;
-                items << keyItem << new QStandardItem(it.value().toVariant().toString());
-                parentItem->appendRow(items);
-            }
-        }
+    if (value.isObject()) {
+        populateModel(value.toObject(), parentItem);
+    } else if (value.isArray()) {
+        populateModel(value.toArray(), parentItem);
     } else {
-        QStandardItem *item = new QStandardItem(value.toVariant().toString());
-        parentItem->appendRow(item);
+        QStandardItem *valueItem = new QStandardItem(value.toVariant().toString());
+        parentItem->appendRow(valueItem);
     }
 }
